@@ -56,16 +56,16 @@ function PreviewModal({ name, wish, amount, onConfirm, onClose }) {
 }
 
 export default function App() {
-  const [step, setStep]           = useState("form");
-  const [name, setName]           = useState("");
-  const [wish, setWish]           = useState("");
-  const [amount, setAmount]       = useState("");
-  const [countdown, setCountdown] = useState(10);
-  const [nameError, setNameError] = useState("");
+  const [step, setStep]               = useState("form");
+  const [name, setName]               = useState("");
+  const [wish, setWish]               = useState("");
+  const [amount, setAmount]           = useState("");
+  const [countdown, setCountdown]     = useState(10);
+  const [nameError, setNameError]     = useState("");
   const [showPreview, setShowPreview] = useState(false);
-  const [sending, setSending]     = useState(false);
-  const [copied, setCopied]       = useState(false);
-  const [waUrl, setWaUrl]         = useState("");
+  const [sending, setSending]         = useState(false);
+  const [copied, setCopied]           = useState(false);
+  const [waUrl, setWaUrl]             = useState("");
   const timerRef = useRef(null);
 
   const handlePreview = () => {
@@ -79,40 +79,48 @@ export default function App() {
     if (sending) return;
     setSending(true);
     haptic(60);
+
     const text = buildMessage(name, wish, amount);
     const url  = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`;
     setWaUrl(url);
     setShowPreview(false);
+
     if (amount) {
-      const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
-      window.location.href = `tel:${dialCode}`;
-      setStep("whatsapp");
+      // 1️⃣ Open WhatsApp immediately
+      window.open(url, "_blank");
+      // 2️⃣ Show countdown screen — MoMo dials when it hits 0
+      setStep("momo-pending");
+      setCountdown(10);
     } else {
+      // No gift amount — just WhatsApp
       window.open(url, "_blank");
       setStep("done");
     }
   }, [sending, name, wish, amount]);
 
+  // Countdown then auto-dial MoMo
   useEffect(() => {
-    if (step !== "whatsapp") return;
-    let count = 20;
-    setCountdown(20);
+    if (step !== "momo-pending") return;
+    let count = 10;
+    setCountdown(10);
     timerRef.current = setInterval(() => {
       count -= 1;
       setCountdown(count);
       if (count <= 0) {
         clearInterval(timerRef.current);
-        window.open(waUrl, "_blank");
+        const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
+        window.location.href = `tel:${dialCode}`;
         setStep("done");
       }
     }, 1000);
     return () => clearInterval(timerRef.current);
   }, [step]);
 
-  const skipTimer = () => {
+  const skipToMomo = () => {
     clearInterval(timerRef.current);
     haptic(80);
-    window.open(waUrl, "_blank");
+    const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
+    window.location.href = `tel:${dialCode}`;
     setStep("done");
   };
 
@@ -169,7 +177,7 @@ export default function App() {
               <label>Your Name <span className="required">*</span></label>
               <input
                 type="text"
-                placeholder="e.g. Alice"
+                placeholder="e.g. Alice-"
                 value={name}
                 onChange={e => { setName(e.target.value); setNameError(""); }}
                 className={nameError ? "error" : ""}
@@ -212,7 +220,11 @@ export default function App() {
                   min="0"
                 />
               </div>
-              {amount && <span className="hint">💡 MoMo payment dial launches before  WhatsApp comes and back to send message </span>}
+              {amount && (
+                <span className="hint">
+                  💡 WhatsApp opens first, then MoMo dials automatically after 10 seconds
+                </span>
+              )}
             </div>
 
             <button className="btn-send" onClick={handlePreview} disabled={sending}>
@@ -226,33 +238,36 @@ export default function App() {
         </div>
       )}
 
-      {/* ── WHATSAPP WAITING ── */}
-      {step === "whatsapp" && (
+      {/* ── MOMO PENDING — WhatsApp already open, counting down to MoMo dial ── */}
+      {step === "momo-pending" && (
         <div className="card animate-in center">
-          <Confetti />
-          <div className="big-emoji">📞</div>
-          <h2>MoMo Dialing…</h2>
-          <p className="subtitle">Complete the MoMo payment on your phone.</p>
-          <p className="momo-code-preview">Dial: <code>*182*8*1*{MOMO_CODE}*{amount}#</code></p>
+          <div className="big-emoji">💸</div>
+          <h2>WhatsApp Opened! ✅</h2>
+          <p className="subtitle">
+            Finish sending your message there, then come back.<br/>
+            MoMo payment dials automatically in:
+          </p>
 
           <div className="timer-ring">
             <svg viewBox="0 0 80 80">
               <circle cx="40" cy="40" r="34" className="ring-bg"/>
               <circle cx="40" cy="40" r="34" className="ring-fill"
-                style={{ strokeDashoffset: 213.6 - (213.6 * countdown / 20) }}/>
+                style={{ strokeDashoffset: 213.6 - (213.6 * (10 - countdown) / 10) }}/>
             </svg>
             <span className="timer-num">{countdown}</span>
           </div>
-          <p className="timer-label">WhatsApp opens automatically in <strong>{countdown}s</strong></p>
 
-          <a className="btn-wa-fallback" href={waUrl} target="_blank" rel="noreferrer">
-            Open WhatsApp now ↗
-          </a>
-          <button className="btn-skip" onClick={skipTimer}>Skip to WhatsApp →</button>
+          <p className="momo-code-preview">
+            Will dial: <code>*182*8*1*{MOMO_CODE}*{amount}#</code>
+          </p>
+
+          <button className="btn-send" onClick={skipToMomo}>
+            💳 Dial MoMo Now
+          </button>
         </div>
       )}
 
-            {/* ── DONE ── */}
+      {/* ── DONE ── */}
       {step === "done" && (
         <div className="card animate-in center">
           <Confetti />
