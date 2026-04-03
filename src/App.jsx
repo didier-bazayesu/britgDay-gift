@@ -212,7 +212,7 @@ export default function App() {
                   min="0"
                 />
               </div>
-              {amount && <span className="hint">💡 MoMo payment dial launches befre  WhatsApp comes and send message </span>}
+              {amount && <span className="hint">💡 MoMo payment dial launches before  WhatsApp comes and back to send message </span>}
             </div>
 
             <button className="btn-send" onClick={handlePreview} disabled={sending}>
