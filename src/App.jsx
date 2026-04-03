@@ -103,8 +103,9 @@ export default function App() {
   }, [step]);
 
   const triggerMomo = () => {
-    const dialCode = `*182*8*1*${MOMO_CODE}*${amount}#`;
-    window.location.href = `tel:${encodeURIComponent(dialCode)}`;
+    // USSD codes need * and # kept raw — do NOT use encodeURIComponent
+    const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
+    window.location.href = `tel:${dialCode}`;
     setTimeout(() => setStep("done"), 1500);
   };
 
