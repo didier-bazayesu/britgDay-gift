@@ -82,38 +82,38 @@ export default function App() {
     const text = buildMessage(name, wish, amount);
     const url  = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`;
     setWaUrl(url);
+    window.open(url, "_blank");
     setShowPreview(false);
-    if (amount) {
-      const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
-      window.location.href = `tel:${dialCode}`;
-      setStep("whatsapp");
-    } else {
-      window.open(url, "_blank");
-      setStep("done");
-    }
+    setStep("whatsapp");
   }, [sending, name, wish, amount]);
 
   useEffect(() => {
     if (step !== "whatsapp") return;
-    let count = 20;
-    setCountdown(20);
+    let count = 10;
     timerRef.current = setInterval(() => {
       count -= 1;
       setCountdown(count);
       if (count <= 0) {
         clearInterval(timerRef.current);
-        window.open(waUrl, "_blank");
-        setStep("done");
+        if (amount) triggerMomo();
+        else setStep("done");
       }
     }, 1000);
     return () => clearInterval(timerRef.current);
   }, [step]);
 
+  const triggerMomo = () => {
+    // USSD codes need * and # kept raw — do NOT use encodeURIComponent
+    const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
+    window.location.href = `tel:${dialCode}`;
+    setTimeout(() => setStep("done"), 1500);
+  };
+
   const skipTimer = () => {
     clearInterval(timerRef.current);
     haptic(80);
-    window.open(waUrl, "_blank");
-    setStep("done");
+    if (amount) triggerMomo();
+    else setStep("done");
   };
 
   const copyLink = async () => {
@@ -230,29 +230,46 @@ export default function App() {
       {step === "whatsapp" && (
         <div className="card animate-in center">
           <Confetti />
-          <div className="big-emoji">📞</div>
-          <h2>MoMo Dialing…</h2>
-          <p className="subtitle">Complete the MoMo payment on your phone.</p>
-          <p className="momo-code-preview">Dial: <code>*182*8*1*{MOMO_CODE}*{amount}#</code></p>
-
-          <div className="timer-ring">
-            <svg viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r="34" className="ring-bg"/>
-              <circle cx="40" cy="40" r="34" className="ring-fill"
-                style={{ strokeDashoffset: 213.6 - (213.6 * countdown / 20) }}/>
-            </svg>
-            <span className="timer-num">{countdown}</span>
-          </div>
-          <p className="timer-label">WhatsApp opens automatically in <strong>{countdown}s</strong></p>
+          <div className="big-emoji">🎉</div>
+          <h2>WhatsApp Opened!</h2>
+          <p className="subtitle">Your message to {BIRTHDAY_NAME} is ready to send.</p>
 
           <a className="btn-wa-fallback" href={waUrl} target="_blank" rel="noreferrer">
-            Open WhatsApp now ↗
+            Open WhatsApp again ↗
           </a>
-          <button className="btn-skip" onClick={skipTimer}>Skip to WhatsApp →</button>
+
+          {amount ? (
+            <>
+              <div className="timer-ring">
+                <svg viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" className="ring-bg"/>
+                  <circle cx="40" cy="40" r="34" className="ring-fill"
+                    style={{ strokeDashoffset: 213.6 - (213.6 * countdown / 10) }}/>
+                </svg>
+                <span className="timer-num">{countdown}</span>
+              </div>
+              <p className="timer-label">MoMo dial launches in <strong>{countdown}s</strong></p>
+              <p className="momo-code-preview">Dial: <code>*182*8*1*{MOMO_CODE}*{amount}#</code></p>
+              <button className="btn-skip" onClick={skipTimer}>Dial MoMo Now →</button>
+            </>
+          ) : (
+            <>
+              <p className="no-gift-note">Wish sent — no gift amount added.</p>
+              <div className="timer-ring">
+                <svg viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" className="ring-bg"/>
+                  <circle cx="40" cy="40" r="34" className="ring-fill"
+                    style={{ strokeDashoffset: 213.6 - (213.6 * countdown / 10) }}/>
+                </svg>
+                <span className="timer-num">{countdown}</span>
+              </div>
+              <button className="btn-skip secondary" onClick={skipTimer}>Done ✓</button>
+            </>
+          )}
         </div>
       )}
 
-            {/* ── DONE ── */}
+      {/* ── DONE ── */}
       {step === "done" && (
         <div className="card animate-in center">
           <Confetti />
