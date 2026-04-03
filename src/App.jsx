@@ -206,13 +206,13 @@ export default function App() {
                 <span className="currency">RWF</span>
                 <input
                   type="number"
-                  placeholder="or enter custom…"
+                  placeholder="it's optional"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   min="0"
                 />
               </div>
-              {amount && <span className="hint">💡 MoMo payment dial launches after WhatsApp</span>}
+              {amount && <span className="hint">💡 MoMo payment dial launches befre  WhatsApp comes and send message </span>}
             </div>
 
             <button className="btn-send" onClick={handlePreview} disabled={sending}>
