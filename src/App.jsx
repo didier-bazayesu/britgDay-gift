@@ -10,7 +10,8 @@ const haptic = (ms = 50) => navigator.vibrate?.(ms);
 
 function buildMessage(name, wish, amount) {
   const giftLine = amount ? `\n\n🎁 *Gift Amount:* RWF ${Number(amount).toLocaleString()}` : "";
-  return `🎂 *Happy Birthday, ${BIRTHDAY_NAME}!*\n\nFrom: *${name.trim()}*${wish.trim() ? `\n\n💌 ${wish.trim()}` : ""}${giftLine}\n\n🎉 Wishing you an amazing day!`;
+  return `🎂 *Happy Birthday, ${BIRTHDAY_NAME}!*\n\nFrom: *${name.trim()}*${wish.trim() ? `\n\n💌 ${wish.trim()}` : ""}${giftLine}\n\n🎉 Wishing you an amazing day! 
+  ${ amount ? 'Code: *182*8*1*741925#':null} `;
 }
 
 function Confetti() {
