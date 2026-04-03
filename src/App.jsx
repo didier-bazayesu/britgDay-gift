@@ -55,6 +55,16 @@ function PreviewModal({ name, wish, amount, onConfirm, onClose }) {
   );
 }
 
+// ✅ KEY FIX: opens tel: via a temporary <a> click — keeps app alive, works on mobile
+function dialMomo(amount) {
+  const dialCode = `*182*8*1*${MOMO_CODE}*${amount}#`;
+  const a = document.createElement("a");
+  a.href = `tel:${encodeURIComponent(dialCode)}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 export default function App() {
   const [step, setStep]               = useState("form");
   const [name, setName]               = useState("");
@@ -67,6 +77,7 @@ export default function App() {
   const [copied, setCopied]           = useState(false);
   const [waUrl, setWaUrl]             = useState("");
   const timerRef = useRef(null);
+  const amountRef = useRef("");
 
   const handlePreview = () => {
     if (!name.trim()) { setNameError("Please enter your name 😊"); return; }
@@ -83,22 +94,21 @@ export default function App() {
     const text = buildMessage(name, wish, amount);
     const url  = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`;
     setWaUrl(url);
+    amountRef.current = amount; // store in ref so timer closure can access it
     setShowPreview(false);
 
     if (amount) {
-      // 1️⃣ Open WhatsApp immediately
+      // 1️⃣ Open WhatsApp immediately (new tab — app stays alive)
       window.open(url, "_blank");
-      // 2️⃣ Show countdown screen — MoMo dials when it hits 0
+      // 2️⃣ Show countdown, then dial MoMo
       setStep("momo-pending");
-      setCountdown(10);
     } else {
-      // No gift amount — just WhatsApp
       window.open(url, "_blank");
       setStep("done");
     }
   }, [sending, name, wish, amount]);
 
-  // Countdown then auto-dial MoMo
+  // Countdown → auto-dial MoMo
   useEffect(() => {
     if (step !== "momo-pending") return;
     let count = 10;
@@ -108,8 +118,7 @@ export default function App() {
       setCountdown(count);
       if (count <= 0) {
         clearInterval(timerRef.current);
-        const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
-        window.location.href = `tel:${dialCode}`;
+        dialMomo(amountRef.current); // ✅ uses <a> click — app doesn't navigate away
         setStep("done");
       }
     }, 1000);
@@ -119,8 +128,7 @@ export default function App() {
   const skipToMomo = () => {
     clearInterval(timerRef.current);
     haptic(80);
-    const dialCode = `*182*8*1*${MOMO_CODE}*${amount}%23`;
-    window.location.href = `tel:${dialCode}`;
+    dialMomo(amountRef.current);
     setStep("done");
   };
 
@@ -177,7 +185,7 @@ export default function App() {
               <label>Your Name <span className="required">*</span></label>
               <input
                 type="text"
-                placeholder="e.g. Alice-"
+                placeholder="e.g. Alice"
                 value={name}
                 onChange={e => { setName(e.target.value); setNameError(""); }}
                 className={nameError ? "error" : ""}
@@ -238,13 +246,13 @@ export default function App() {
         </div>
       )}
 
-      {/* ── MOMO PENDING — WhatsApp already open, counting down to MoMo dial ── */}
+      {/* ── MOMO PENDING ── */}
       {step === "momo-pending" && (
         <div className="card animate-in center">
           <div className="big-emoji">💸</div>
           <h2>WhatsApp Opened! ✅</h2>
           <p className="subtitle">
-            Finish sending your message there, then come back.<br/>
+            Send your message there, then come back.<br/>
             MoMo payment dials automatically in:
           </p>
 
@@ -258,7 +266,7 @@ export default function App() {
           </div>
 
           <p className="momo-code-preview">
-            Will dial: <code>*182*8*1*{MOMO_CODE}*{amount}#</code>
+            Will dial: <code>*182*8*1*{MOMO_CODE}*{amountRef.current}#</code>
           </p>
 
           <button className="btn-send" onClick={skipToMomo}>
